@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail Wrapped - Sender Summarizer</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Gmail Wrapped</title>
+   <link rel="stylesheet" href="style.css">
+   
+</head>
+<body class="bgColor">
+    <div class="heading1" style="font-size: 30px ;">
+        <h1> <span style="color:#4285F4; margin-left: 40px;">G</span> 
+         <span style="color:#DB4437">m</span>
+         <span style="color:#F4B400">a</span>
+         <span style="color:#4285F4">i</span>
+         <span style="color:#0F9D58">l</span> 
+         Wrapped</h1>
+    </div>
+
+    <div id="myProgress">
+      <div id="myBar"></div>
+    </div>
+    
+    <div class="main-container">
+    <div class="middleVisual"> 
+      <h1 class="text line1">Who's your top emailsender?</h1>
+      <h2 class="text">Stats right to your screen</h2>
+      <h3 class="text">Click the icon below to login:</h3>
+      
+      <div class="button-container" id="authorize_button">
+        <img src="funnyGmailIcon.png" onclick="handleAuthClick()" class="button-logo">
+      </div>
+    </div>
+    </div>
+
+    <script src="javascript/script.js"></script>
+
+    <!--Add buttons to initiate auth sequence and sign out-->
+    
+    
+    <pre id="content" style="white-space: pre-wrap;"></pre>
+
+    <script type="text/javascript">
+      /* exported gapiLoaded */
+      /* exported gisLoaded */
+      /* exported handleAuthClick */
+      /* exported handleSignoutClick */
+
+      // TODO(developer): Set to client ID and API key from the Developer Console
+      //Also: How Many Emails are sent
+      const CLIENT_ID = '122049738044-4utjocno5d41hre5afudgutd5s6tihl8.apps.googleusercontent.com';
+      const API_KEY = 'AIzaSyCInfBR68P8r5soaXcnJ83qfSxFYYcd9qQ';
+      const emailLength = 500;
+
+
+      // Discovery doc URL for APIs used by the quickstart
+      const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
+
+      // Authorization scopes required by the API; multiple scopes can be
+      // included, separated by spaces.
+      const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+
+      let tokenClient;
+      let gapiInited = false;
+      let gisInited = false;
+
+      document.getElementById('authorize_button').style.visibility = 'hidden';
+      document.getElementById('myProgress').style.visibility = 'hidden';
+      document.getElementById('mybar').style.visibility = 'hidden';
+
+      /**
+       * Callback after api.js is loaded.
+       */
+      function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
+      }
+
+      /**
+       * Callback after the API client is loaded. Loads the
+       * discovery doc to initialize the API.
+       */
+      async function initializeGapiClient() {
+        await gapi.client.init({
+          apiKey: API_KEY,
+          discoveryDocs: [DISCOVERY_DOC],
+        });
+        gapiInited = true;
+        maybeEnableButtons();
+      }
+
+      /**
+       * Callback after Google Identity Services are loaded.
+       */
+      function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: '', // defined later
+        });
+        gisInited = true;
+        maybeEnableButtons();
+      }
+
+      /**
+       * Enables user interaction after all libraries are loaded.
+       */
+      function maybeEnableButtons() {
+        if (gapiInited && gisInited) {
+          document.getElementById('authorize_button').style.visibility = 'visible';
+        }
+      }
+
+      /**
+       *  Sign in the user upon button click.
+       */
+      function handleAuthClick() {
+        tokenClient.callback = async (resp) => {
+          if (resp.error !== undefined) {
+            throw (resp);
+          }
+          document.getElementById('myProgress').style.visibility = 'visible';
+          await processEmails();
+        };
+
+        if (gapi.client.getToken() === null) {
+          // Prompt the user to select a Google Account and ask for consent to share their data
+          // when establishing a new session.
+          tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+          // Skip display of account chooser and consent dialog for an existing session.
+          tokenClient.requestAccessToken({prompt: ''});
+        }
+      }
+
+      /**
+       *  Sign out the user upon button click.
+       */
+      function handleSignoutClick() {
+        const token = gapi.client.getToken();
+        if (token !== null) {
+          google.accounts.oauth2.revoke(token.access_token);
+          gapi.client.setToken('');
+          document.getElementById('content').innerText = '';
+          document.getElementById('authorize_button').innerText = 'Authorize';
+        }
+      }
+        async function processEmails() {
+            let temp;
+            temp = await gapi.client.gmail.users.messages.list({
+                'maxResults' : emailLength,
+                'userId': 'me',
+            });
+            
+           let messageIds = []
+               temp.result.messages.forEach(item =>{
+               messageIds.push(item.id)
+           })
+
+            let response = [];
+            for(let i = 0; i < messageIds.length; i++){
+                let res = await gapi.client.gmail.users.messages.get({
+                    'userId' : 'me',
+                    'id' : messageIds[i],
+                    'format' : 'full'
+                    
+                })
+                var elem = document.getElementById("myBar");
+                var width = (i/messageIds.length)*100;
+                elem.style.width = width + "%";
+
+                response.push(res)
+                console.log(res)
+            }
+            unfilteredList = []
+            response.forEach(item =>{
+              let x = item.result.payload.headers.filter(e=>e.name === "From")
+              unfilteredList.push(x[0].value)
+            })
+            
+            let filteredList = []
+            filteredList = extractAllEmails(unfilteredList)
+
+
+            let filteredCountList = []
+            filteredCountList = getSenderCounts(filteredList)
+
+            
+            filteredCountList = sortCounts(filteredCountList)
+
+
+            let innerString = "";
+            for(var i = 0; i < filteredCountList.length; i++){
+                innerString += "" + filteredCountList[i][0] + " " + filteredCountList[i][1] + "\n"
+            }
+            
+            localStorage.setItem("userData",JSON.stringify(innerString))
+            window.location.replace("analyticsPage.html");
+        }
+       
+function extractEmail(nameAndEmail) {
+    var email = "";
+    for (var i = nameAndEmail.length - 1; i >= 0; i--) {
+        if (nameAndEmail[i] === '<') {
+            email = nameAndEmail.slice(i + 1,-1);
+            break;
+        }
+    }
+    if (email === "") return nameAndEmail; // in case there is no name
+    return email;
+}
+function extractAllEmails(unfilteredList) {
+    var filteredList = new Array();
+    for (var i = 0; i < unfilteredList.length; i++) {
+        filteredList.push(extractEmail(unfilteredList[i]));
+        }
+        return filteredList;
+      }
+
+// returns list of senders, each expressed as a list with the format [sender email (str), count (int)]
+function getSenderCounts(listOfSenders) {
+
+    // array of len 2 arrays, each formatted [sender email (str), count (int)]
+    var counts = new Array();
+
+    // iterates thru each sender email
+    for (var i = 0; i < listOfSenders.length; i++) {
+
+        var found = false;
+
+        // iterates thru current counts
+        for (var j = 0; j < counts.length; j++) {
+            // if counts already contains the sender
+            if (listOfSenders[i] === counts[j][0]) {
+                found = true;
+                counts[j][1] += 1;
+                break;
+            }
+        }
+
+        // if it wasn't already in counts, add it to the end
+        if (!found) {
+            counts.push([listOfSenders[i], 1]);
+        }
+    }
+
+    return counts;
+}
+function sortCounts(listOfSenders){
+    return listOfSenders.sort((a, b) => b[1] - a[1]);
+}
+
+
+    </script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+</html>

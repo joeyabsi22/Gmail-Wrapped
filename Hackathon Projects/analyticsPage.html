@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gmail Wrapped - Sender Summarizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bgColor" style="background-color: #000000">
+    <h1 class="heading1" style="font-size: 100px ;">Your Most Popular Senders</h1>
+  <div class="main-container">
+  <table class="podiums" style="filter: drop-shadow(0 0 10px rgb(255, 255, 255));">
+    <th>
+      <td style="text-align: center; padding:20px">Top 3 Senders</td>
+    </th>
+    <tr>
+      <td>
+        <table style="margin-left: 30%;">
+          <tr>
+            <td id="secondPlace"></td>
+          </tr>
+        </table>
+      </td>
+      <td>
+        <table style="margin-left: 20%">
+          <tr>
+            <td id="firstPlace"></td>
+          </tr>
+        </table>
+      </td>
+      <td>
+        <table style="margin-left: 30%">
+          <tr>
+            <td id="thirdPlace"></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="topSenders" id="ss"></td>
+      <td class="topSenders" id="fs"></td>
+      <td class="topSenders" id="ts"></td>
+    </tr>
+  </table>
+  
+
+    <div id="content">
+    </div>
+
+    <script>
+      let userData = localStorage.getItem("userData")
+      let parsedData = JSON.parse(userData)
+      document.getElementById('content').style.textAlign = "center";
+      
+
+      var list = parsedData.split(/\r?\n/);
+
+      var outputStr = "\n\n";
+
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].split(" ")[0] === '') break;
+        outputStr += "#" + (i + 1) + ": " + list[i].split(" ")[0] + " - " + list[i].split(" ")[1] + "\n\n";
+      }
+
+      document.getElementById('content').innerText = outputStr;
+
+      var sender1 = list[0].split(" ")[0];
+      var number1 = list[0].split(" ")[1];
+      var sender2 = list[1].split(" ")[0];
+      var number2 = list[1].split(" ")[1];
+      var sender3 = list[2].split(" ")[0];
+      var number3 = list[2].split(" ")[1];
+
+      
+      document.getElementById("fs").innerText = sender1;
+      document.getElementById("ss").innerText = sender2;
+      document.getElementById("ts").innerText = sender3;
+      
+      
+
+    </script>
+    </div>
+</body>
+</html>

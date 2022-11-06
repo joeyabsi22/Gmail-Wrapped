@@ -1,0 +1,17 @@
+
+
+- User opens website, big button prompting to sign into Google
+- After inputted, we have 2 subpages to direct to:
+    - If something goes wrong in retrieving the email data, direct the user
+        to a page saying that something went wrong, with a link back to the main page to retry
+    - If all goes well, direct user to the page displaying the analytics after 
+        processing their email data
+    
+    Design of 
+
+
+- API Handling
+GET Gmail Messages
+Then we loop through the messages, saving each new identified email provider, increase count of each already identified email provider
+Once looped all the way through, display the email providers with the highest count
+Side feature: If any listed email providers we save are identified, mention them here (Youtube, Netflix, Spotyify, etc.)
